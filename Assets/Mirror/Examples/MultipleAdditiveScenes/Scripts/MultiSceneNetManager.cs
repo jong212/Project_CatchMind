@@ -2,12 +2,28 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Mirror;
 
 namespace Mirror.Examples.MultipleAdditiveScenes
 {
     [AddComponentMenu("")]
     public class MultiSceneNetManager : NetworkManager
     {
+        public static MultiSceneNetManager instance;
+
+        void Awake()
+        {
+            if (instance == null)
+            {
+                instance = this;
+                DontDestroyOnLoad(gameObject);
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
+        }
+
         [Header("Spawner Setup")]
         [Tooltip("Reward Prefab for the Spawner")]
         public GameObject rewardPrefab;
@@ -28,39 +44,37 @@ namespace Mirror.Examples.MultipleAdditiveScenes
         // Dictionary to track player count per scene
         Dictionary<Scene, int> scenePlayerCount = new Dictionary<Scene, int>();
 
+        void Start()
+        {
+            NetworkClient.OnConnectedEvent += OnClientConnected;
+        }
+
+        void OnDestroy()
+        {
+            NetworkClient.OnConnectedEvent -= OnClientConnected;
+        }
+
         #region Server System Callbacks
 
-        /// <summary>
-        /// Called on the server when a client adds a new player with NetworkClient.AddPlayer.
-        /// <para>The default implementation for this function creates a new player object from the playerPrefab.</para>
-        /// </summary>
-        /// <param name="conn">Connection from client.</param>
         public override void OnServerAddPlayer(NetworkConnectionToClient conn)
         {
             StartCoroutine(OnServerAddPlayerDelayed(conn));
         }
 
-        // This delay is mostly for the host player that loads too fast for the
-        // server to have subscenes async loaded from OnStartServer ahead of it.
         IEnumerator OnServerAddPlayerDelayed(NetworkConnectionToClient conn)
         {
-            // wait for server to async load all subscenes for game instances
             while (!subscenesLoaded)
                 yield return null;
 
-            // Send Scene message to client to additively load the game scene
             conn.Send(new SceneMessage { sceneName = gameScene, sceneOperation = SceneOperation.LoadAdditive });
 
-            // Wait for end of frame before adding the player to ensure Scene Message goes first
             yield return new WaitForEndOfFrame();
 
             base.OnServerAddPlayer(conn);
 
-            // Assign the player to a room
             Scene targetScene = GetTargetSceneForPlayer();
             SceneManager.MoveGameObjectToScene(conn.identity.gameObject, targetScene);
 
-            // Update player count for the assigned scene
             if (scenePlayerCount.ContainsKey(targetScene))
             {
                 scenePlayerCount[targetScene]++;
@@ -71,7 +85,6 @@ namespace Mirror.Examples.MultipleAdditiveScenes
             }
         }
 
-        // Method to get the target scene for the player based on capacity
         Scene GetTargetSceneForPlayer()
         {
             foreach (var scene in subScenes)
@@ -89,7 +102,6 @@ namespace Mirror.Examples.MultipleAdditiveScenes
                 }
             }
 
-            // If all scenes are full, return the last one (or handle as needed)
             return subScenes[subScenes.Count - 1];
         }
 
@@ -97,18 +109,11 @@ namespace Mirror.Examples.MultipleAdditiveScenes
 
         #region Start & Stop Callbacks
 
-        /// <summary>
-        /// This is invoked when a server is started - including when a host is started.
-        /// <para>StartServer has multiple signatures, but they all cause this hook to be called.</para>
-        /// </summary>
         public override void OnStartServer()
         {
             StartCoroutine(ServerLoadSubScenes());
         }
 
-        // We're additively loading scenes, so GetSceneAt(0) will return the main "container" scene,
-        // therefore we start the index at one and loop through instances value inclusively.
-        // If instances is zero, the loop is bypassed entirely.
         IEnumerator ServerLoadSubScenes()
         {
             for (int index = 1; index <= instances; index++)
@@ -124,16 +129,12 @@ namespace Mirror.Examples.MultipleAdditiveScenes
             subscenesLoaded = true;
         }
 
-        /// <summary>
-        /// This is called when a server is stopped - including when a host is stopped.
-        /// </summary>
         public override void OnStopServer()
         {
             NetworkServer.SendToAll(new SceneMessage { sceneName = gameScene, sceneOperation = SceneOperation.UnloadAdditive });
             StartCoroutine(ServerUnloadSubScenes());
         }
 
-        // Unload the subScenes and unused assets and clear the subScenes list.
         IEnumerator ServerUnloadSubScenes()
         {
             for (int index = 0; index < subScenes.Count; index++)
@@ -147,17 +148,12 @@ namespace Mirror.Examples.MultipleAdditiveScenes
             yield return Resources.UnloadUnusedAssets();
         }
 
-        /// <summary>
-        /// This is called when a client is stopped.
-        /// </summary>
         public override void OnStopClient()
         {
-            // Make sure we're not in ServerOnly mode now after stopping host client
             if (mode == NetworkManagerMode.Offline)
                 StartCoroutine(ClientUnloadSubScenes());
         }
 
-        // Unload all but the active scene, which is the "container" scene
         IEnumerator ClientUnloadSubScenes()
         {
             for (int index = 0; index < SceneManager.sceneCount; index++)
@@ -166,5 +162,28 @@ namespace Mirror.Examples.MultipleAdditiveScenes
         }
 
         #endregion
+
+        // Method to start client from the lobby
+        public void StartClientFromLobby()
+        {
+            StartClient();
+        }
+
+        // Method to handle client connection
+        void OnClientConnected()
+        {
+            // Switch to the game scene
+            if (!string.IsNullOrEmpty(gameScene))
+            {
+                SceneManager.LoadScene(gameScene);
+            }
+        }
+    }
+
+    [System.Serializable]
+    public class RoomInfo
+    {
+        public string name;
+        public int playerCount;
     }
 }
