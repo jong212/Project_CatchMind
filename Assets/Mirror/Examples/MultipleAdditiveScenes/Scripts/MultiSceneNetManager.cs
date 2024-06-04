@@ -166,6 +166,7 @@ namespace Mirror.Examples.MultipleAdditiveScenes
         // Method to start client from the lobby
         public void StartClientFromLobby()
         {
+            SceneManager.LoadScene("MirrorMultipleAdditiveScenesMain");
             StartClient();
         }
 
@@ -178,7 +179,7 @@ namespace Mirror.Examples.MultipleAdditiveScenes
                 SceneManager.LoadScene(gameScene);
             }
         }
-    }
+    } 
 
     [System.Serializable]
     public class RoomInfo
