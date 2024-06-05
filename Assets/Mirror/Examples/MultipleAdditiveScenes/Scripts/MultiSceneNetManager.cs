@@ -204,7 +204,7 @@ namespace Mirror.Examples.MultipleAdditiveScenes
         
         public void StartClientFromLobby()//B 
         {
-            SceneManager.LoadScene("MirrorMultipleAdditiveScenesMain");
+            SceneManager.LoadScene("MirrorMultipleAdditiveScenesGame");
             StartClient();//B-1
         }
 

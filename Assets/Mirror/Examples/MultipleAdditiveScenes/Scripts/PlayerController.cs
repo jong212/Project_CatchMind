@@ -56,7 +56,7 @@ namespace Mirror.Examples.MultipleAdditiveScenes
 
         protected override void OnValidate()
         {
-            base.OnValidate();
+         /*   base.OnValidate();
 
             if (characterController == null)
                 characterController = GetComponent<CharacterController>();
@@ -68,7 +68,7 @@ namespace Mirror.Examples.MultipleAdditiveScenes
 
             GetComponent<Rigidbody>().isKinematic = true;
 
-            this.enabled = false;
+            this.enabled = false;*/
         }
 
         public override void OnStartAuthority()
