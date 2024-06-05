@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Mirror;
+using System.Linq;
 
 namespace Mirror.Examples.MultipleAdditiveScenes
 {
@@ -44,6 +45,14 @@ namespace Mirror.Examples.MultipleAdditiveScenes
         readonly List<Scene> subScenes = new List<Scene>();
         Dictionary<Scene, int> scenePlayerCount = new Dictionary<Scene, int>();
 
+        [SerializeField]Dictionary<Scene, List<NetworkConnectionToClient?>> scenePlayers = new Dictionary<Scene, List<NetworkConnectionToClient?>>();
+        Vector3[] spawnPositions = new Vector3[]
+{
+            new Vector3(0, 0, 0),
+            new Vector3(10, 0, 0),
+            new Vector3(20, 0, 0),
+            new Vector3(30, 0, 0),
+};
         // A <서버> 서버온리할때 실행됨
         public override void OnStartServer()
         {
@@ -55,11 +64,17 @@ namespace Mirror.Examples.MultipleAdditiveScenes
         {
             for (int index = 1; index <= instances; index++)
             {
+                //서버에서 비동기적으로 게임씬을 로드시켜놓고
                 yield return SceneManager.LoadSceneAsync(gameScene, new LoadSceneParameters { loadSceneMode = LoadSceneMode.Additive, localPhysicsMode = LocalPhysicsMode.Physics3D });
-
+                //현재 서버에서 로드 된 씬중 인덱스 1번의 씬을 반환한다 위에서 게임씬을 생성시켰으니 1번은 게임씬임
                 Scene newScene = SceneManager.GetSceneAt(index);
+                //게임씬 일단 서브씬에 추가하고
                 subScenes.Add(newScene);
-                scenePlayerCount[newScene] = 0; // Initialize player count for each scene
+                scenePlayerCount[newScene] = 0;
+                // 추가 된 1번째 게임씬을 배열에 추가한다
+                scenePlayers[newScene] = new List<NetworkConnectionToClient?>();
+
+                // 스포너를 통해 씬에서 초기 스폰 작업을 수행한다.
                 Spawner.InitialSpawn(newScene);
             }
 
@@ -93,19 +108,30 @@ namespace Mirror.Examples.MultipleAdditiveScenes
             conn.Send(new SceneMessage { sceneName = gameScene, sceneOperation = SceneOperation.LoadAdditive });
 
             yield return new WaitForEndOfFrame();
-// # 플레이어 객체 이동:
-//base.OnServerAddPlayer(conn);을 호출하여 기본 플레이어 생성 로직을 실행합니다.
-//GetTargetSceneForPlayer()를 호출하여 플레이어를 배치할 대상 씬을 찾습니다.
-//SceneManager.MoveGameObjectToScene(conn.identity.gameObject, targetScene);을 사용하여 플레이어 객체를 대상 씬으로 이동시킵니다.
-//이 때 플레이어 객체의 NetworkIdentity 컴포넌트가 활성화되어 있는지 확인합니다.
-            base.OnServerAddPlayer(conn);
             Scene targetScene = GetTargetSceneForPlayer();// 플레이어 넣을 씬 찾기
-            SceneManager.MoveGameObjectToScene(conn.identity.gameObject, targetScene);
-            Debug.Log("클라이언트 창 게임씬 로드함?");
+            Vector3 spawnPosition = GetSpawnPosition(targetScene, out int playerIndex);
 
-// # PlayArea 활성화
-//대상 씬의 루트 게임 오브젝트를 순회하면서 "PlayArea" 게임 오브젝트를 찾습니다.
-//찾은 "PlayArea" 게임 오브젝트의 NetworkIdentity 컴포넌트를 강제로 활성화합니다.
+
+            // # 플레이어 객체 이동:
+            //base.OnServerAddPlayer(conn);을 호출하여 기본 플레이어 생성 로직을 실행합니다.
+            //GetTargetSceneForPlayer()를 호출하여 플레이어를 배치할 대상 씬을 찾습니다.
+            //SceneManager.MoveGameObjectToScene(conn.identity.gameObject, targetScene);을 사용하여 플레이어 객체를 대상 씬으로 이동시킵니다.
+            //이 때 플레이어 객체의 NetworkIdentity 컴포넌트가 활성화되어 있는지 확인합니다.
+            base.OnServerAddPlayer(conn);
+            // 플레이어 객체를 가져와서 위치 설정
+            GameObject player = conn.identity.gameObject;
+            player.transform.position = spawnPosition;
+
+            // 플레이어 객체를 타겟 씬으로 이동
+            SceneManager.MoveGameObjectToScene(player, targetScene);
+            /*SceneManager.MoveGameObjectToScene(conn.identity.gameObject, targetScene);*/
+            // 플레이어 목록에 추가
+            scenePlayers[targetScene].Add(conn);
+
+
+            // # PlayArea 활성화
+            //대상 씬의 루트 게임 오브젝트를 순회하면서 "PlayArea" 게임 오브젝트를 찾습니다.
+            //찾은 "PlayArea" 게임 오브젝트의 NetworkIdentity 컴포넌트를 강제로 활성화합니다.
 
             if (scenePlayerCount.ContainsKey(targetScene))
             {
@@ -139,11 +165,42 @@ namespace Mirror.Examples.MultipleAdditiveScenes
 
             return subScenes[subScenes.Count - 1];
         }
+        Vector3 GetSpawnPosition(Scene scene, out int playerIndex)
+        {
+            if (scenePlayers.TryGetValue(scene, out List<NetworkConnectionToClient?> players))
+            {
+                for (int i = 0; i < roomCapacity; i++)
+                {
+                    if (i >= players.Count || players[i] == null)
+                    {
+                        playerIndex = i;
+                        return spawnPositions[i]; // 인덱스에 따른 미리 정의된 위치 반환
+                    }
+                }
+            }
+            playerIndex = -1;
+            return Vector3.zero;
+        }
 
         #endregion
 
+        /*로그체크용*/
         #region Start & Stop Callbacks
- 
+        void LogScenePlayers()
+        {
+            foreach (var kvp in scenePlayers)
+            {
+                string sceneName = kvp.Key.name;
+                string players = string.Join(", ", kvp.Value.Select(c => c != null ? c.connectionId.ToString() : "null"));
+                Debug.Log($"Scene: {sceneName}, Players: {players}");
+            }
+        }
+
+        void Update()
+        {
+            // 매 프레임마다 콘솔에 로그 출력
+            LogScenePlayers();
+        }
         public override void OnStopServer()
         {
             NetworkServer.SendToAll(new SceneMessage { sceneName = gameScene, sceneOperation = SceneOperation.UnloadAdditive });
@@ -157,6 +214,7 @@ namespace Mirror.Examples.MultipleAdditiveScenes
                     yield return SceneManager.UnloadSceneAsync(subScenes[index]);
 
             subScenes.Clear();
+            scenePlayers.Clear();
             scenePlayerCount.Clear();
             subscenesLoaded = false;
 
