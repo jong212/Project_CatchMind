@@ -73,7 +73,7 @@ namespace Mirror.Examples.MultipleAdditiveScenes
 
         public override void OnStartAuthority()
         {
-            characterController.enabled = true;
+            /*characterController.enabled = true;*/
             this.enabled = true;
         }
 
