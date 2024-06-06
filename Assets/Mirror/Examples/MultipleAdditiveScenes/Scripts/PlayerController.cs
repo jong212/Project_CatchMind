@@ -122,6 +122,19 @@ namespace Mirror.Examples.MultipleAdditiveScenes
             transform.Rotate(0f, turnSpeed * Time.deltaTime, 0f);
         }
 
+        public override void OnStartClient()
+        {
+            base.OnStartClient();
+            Debug.Log($"Client: Player {netId} started at {transform.position}");
+        }
+
+        [TargetRpc]
+        public void TargetUpdatePlayerPosition(NetworkConnection target, Vector3 position)
+        {
+            // 클라이언트에서 포지션 값 설정
+            transform.position = position;
+            Debug.Log($"Client: Position updated to {position}");
+        }
         void HandleJumping()
         {
             // Handle variable force jumping.

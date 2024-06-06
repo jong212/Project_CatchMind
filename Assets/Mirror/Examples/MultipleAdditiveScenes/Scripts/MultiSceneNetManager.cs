@@ -36,8 +36,8 @@ namespace Mirror.Examples.MultipleAdditiveScenes
         public GameObject rewardPrefab;
 
         [Header("MultiScene Setup")]
-        public int instances = 3;
-        public int roomCapacity = 4; // 방 당 최대 플레이어 수 설정
+        public int instances = 2;
+        public int roomCapacity = 2; // 방 당 최대 플레이어 수 설정
 
         [Scene]
         public string gameScene;                                               //게임씬         
@@ -48,10 +48,14 @@ namespace Mirror.Examples.MultipleAdditiveScenes
         [SerializeField]Dictionary<Scene, List<NetworkConnectionToClient?>> scenePlayers = new Dictionary<Scene, List<NetworkConnectionToClient?>>();
         Vector3[] spawnPositions = new Vector3[]
 {
-            new Vector3(0, 0, 0),
-            new Vector3(10, 0, 0),
-            new Vector3(20, 0, 0),
-            new Vector3(30, 0, 0),
+            new Vector3(-7.01001f, 3.6f, 0),
+            new Vector3(7.3f, 3.6f, 0),
+            new Vector3(-7.01001f, 1.08f, 0),
+            new Vector3(7.3f, 0.99f, 0),
+            new Vector3(-7.01001f,-1.29f, 0),
+            new Vector3(7.3f,-1.12f, 0),
+            new Vector3(-7.01001f,-3.47f, 0),
+            new Vector3(7.3f,-3.57f, 0),
 };
         // A <서버> 서버온리할때 실행됨
         public override void OnStartServer()
@@ -72,7 +76,9 @@ namespace Mirror.Examples.MultipleAdditiveScenes
                 subScenes.Add(newScene);
                 scenePlayerCount[newScene] = 0;
                 // 추가 된 1번째 게임씬을 배열에 추가한다
-                scenePlayers[newScene] = new List<NetworkConnectionToClient?>();
+                //scenePlayers[newScene] = new List<NetworkConnectionToClient?>();
+                scenePlayers[newScene] = new List<NetworkConnectionToClient?>(new NetworkConnectionToClient?[roomCapacity]);
+
 
                 // 스포너를 통해 씬에서 초기 스폰 작업을 수행한다.
                 Spawner.InitialSpawn(newScene);
@@ -86,7 +92,7 @@ namespace Mirror.Examples.MultipleAdditiveScenes
         public void StartClientFromLobby()
         {
             SceneManager.LoadScene("MirrorMultipleAdditiveScenesGame");
-// B-1 클라이언트를 서버에 연결하는 StartClient 함수이며 
+// B-1 클라이언트를 서버에 연결하는 StartClient 함수이고 OnServerAddPlayer 콜백으로 실행시킴 
             StartClient();
         }
 
@@ -108,30 +114,29 @@ namespace Mirror.Examples.MultipleAdditiveScenes
             conn.Send(new SceneMessage { sceneName = gameScene, sceneOperation = SceneOperation.LoadAdditive });
 
             yield return new WaitForEndOfFrame();
-            Scene targetScene = GetTargetSceneForPlayer();// 플레이어 넣을 씬 찾기
-            Vector3 spawnPosition = GetSpawnPosition(targetScene, out int playerIndex);
+            Scene targetScene = GetTargetSceneForPlayer();// 플레이어 어느 방으로 보내야 하는지 반환하세요 (서버)
+            Vector3 spawnPosition = GetSpawnPosition(targetScene, out int playerIndex); // 반환하는 방에서 몇 번쨰 자리가 비어있는지 확인하고 그 좌표값을 반환하세요 (서버)            
 
+            // 일단 플레이어 현재 씬에 추가할게요? 
+            // 게임씬은 아님 정확히는 게임씬 이동 전 (서버) 
+            // base.OnServerAddPlayer(conn)을 호출하면 호출하면 서버와 클라이언트의 하이어라키에 플레이어 오브젝트가 자동으로 생성됩니다. TargetRpc와 같은 추가적인 동작 없이도 서버와 클라이언트의 상태가 동기화됩니다. (서버에서 실행하고 클라로 상태 전송)
+            base.OnServerAddPlayer(conn); 
 
-            // # 플레이어 객체 이동:
-            //base.OnServerAddPlayer(conn);을 호출하여 기본 플레이어 생성 로직을 실행합니다.
-            //GetTargetSceneForPlayer()를 호출하여 플레이어를 배치할 대상 씬을 찾습니다.
-            //SceneManager.MoveGameObjectToScene(conn.identity.gameObject, targetScene);을 사용하여 플레이어 객체를 대상 씬으로 이동시킵니다.
-            //이 때 플레이어 객체의 NetworkIdentity 컴포넌트가 활성화되어 있는지 확인합니다.
-            base.OnServerAddPlayer(conn);
-            // 플레이어 객체를 가져와서 위치 설정
+            // 하이어라키에 생성한 플레이어 정보를 player에 세팅 !(여기 코루틴 타는건 다 서버에서 동작하고 있는상태)
             GameObject player = conn.identity.gameObject;
-            player.transform.position = spawnPosition;
 
-            // 플레이어 객체를 타겟 씬으로 이동
+            // 자 이제 플레이어 객체를 게임씬으로으로 이동할게요? (서버)
             SceneManager.MoveGameObjectToScene(player, targetScene);
-            /*SceneManager.MoveGameObjectToScene(conn.identity.gameObject, targetScene);*/
+
+            // 클라이언트 플레이어의 PlayerController를 가져와서 TargetRpc 호출
+            PlayerController playerController = player.GetComponent<PlayerController>();
+            if (playerController != null)
+            {
+                playerController.TargetUpdatePlayerPosition(conn, spawnPosition);
+            }
+
             // 플레이어 목록에 추가
-            scenePlayers[targetScene].Add(conn);
-
-
-            // # PlayArea 활성화
-            //대상 씬의 루트 게임 오브젝트를 순회하면서 "PlayArea" 게임 오브젝트를 찾습니다.
-            //찾은 "PlayArea" 게임 오브젝트의 NetworkIdentity 컴포넌트를 강제로 활성화합니다.
+            scenePlayers[targetScene][playerIndex] = conn;
 
             if (scenePlayerCount.ContainsKey(targetScene))
             {
@@ -141,6 +146,7 @@ namespace Mirror.Examples.MultipleAdditiveScenes
             {
                 scenePlayerCount[targetScene] = 1;
             }
+            LogScenePlayers();
         }
 // B-4
 //이 메서드는 플레이어를 수용할 수 있는 적절한 씬을 찾기 위해 subScenes 리스트를 순회합니다. 
@@ -171,17 +177,50 @@ namespace Mirror.Examples.MultipleAdditiveScenes
             {
                 for (int i = 0; i < roomCapacity; i++)
                 {
-                    if (i >= players.Count || players[i] == null)
+                    if (players[i] == null)
                     {
                         playerIndex = i;
+                        Debug.Log($"Spawn position for player index {i} is {spawnPositions[i]}");
+
                         return spawnPositions[i]; // 인덱스에 따른 미리 정의된 위치 반환
                     }
                 }
             }
             playerIndex = -1;
             return Vector3.zero;
+        } 
+        public override void OnServerDisconnect(NetworkConnectionToClient conn)
+        {
+            base.OnServerDisconnect(conn);
+
+            foreach (var scene in subScenes)
+            {
+                if (scenePlayers[scene].Contains(conn))
+                {
+                    int playerIndex = scenePlayers[scene].IndexOf(conn);
+                    scenePlayers[scene][playerIndex] = null;
+                    UpdatePlayerPositions(scene);
+                    scenePlayerCount[scene]--;
+                    LogScenePlayers();
+                    break;
+                }
+            }
         }
 
+        void UpdatePlayerPositions(Scene scene)
+        {
+            if (scenePlayers.TryGetValue(scene, out List<NetworkConnectionToClient?> players))
+            {
+                for (int i = 0; i < players.Count; i++)
+                {
+                    if (players[i] != null)
+                    {
+                        var player = players[i].identity.gameObject;
+                        player.transform.position = spawnPositions[i];
+                    }
+                }
+            }
+        }
         #endregion
 
         /*로그체크용*/
