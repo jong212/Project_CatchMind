@@ -32,8 +32,6 @@ namespace Mirror.Examples.MultipleAdditiveScenes
         }
 
         [Header("Spawner Setup")]
-        [Tooltip("Reward Prefab for the Spawner")]
-        public GameObject rewardPrefab;
 
         [Header("MultiScene Setup")]
         public int instances = 2;

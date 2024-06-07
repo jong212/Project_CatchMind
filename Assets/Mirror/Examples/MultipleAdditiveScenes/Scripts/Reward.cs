@@ -1,4 +1,4 @@
-using UnityEngine;
+/*using UnityEngine;
 
 namespace Mirror.Examples.MultipleAdditiveScenes
 {
@@ -50,3 +50,4 @@ namespace Mirror.Examples.MultipleAdditiveScenes
         }
     }
 }
+*/

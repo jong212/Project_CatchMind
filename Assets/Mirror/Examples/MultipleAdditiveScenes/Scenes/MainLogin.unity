@@ -179,9 +179,17 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6220551684582783438, guid: 7f6df7192d13fb74e8d650d3e9ef6d3b, type: 3}
-      propertyPath: roomCapacity
+      propertyPath: spawnPrefabs.Array.size
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 6220551684582783438, guid: 7f6df7192d13fb74e8d650d3e9ef6d3b, type: 3}
+      propertyPath: spawnPrefabs.Array.data[1]
+      value: 
+      objectReference: {fileID: 1562244960036215604, guid: 57d7e51b2b6b367478cafc1b195081b0, type: 3}
+    - target: {fileID: 6220551684582783438, guid: 7f6df7192d13fb74e8d650d3e9ef6d3b, type: 3}
+      propertyPath: spawnPrefabs.Array.data[2]
+      value: 
+      objectReference: {fileID: 1562244960036215604, guid: 57d7e51b2b6b367478cafc1b195081b0, type: 3}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7f6df7192d13fb74e8d650d3e9ef6d3b, type: 3}
 --- !u!1 &645146164
