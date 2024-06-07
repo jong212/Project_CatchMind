@@ -13,6 +13,6 @@ public class ChildObject : NetworkBehaviour
     [ClientRpc]
     public void RpcSetParent(NetworkIdentity identity)
     {
-        this.transform.SetParent(identity.transform);
+        //this.transform.SetParent(identity.transform);
     }
 }

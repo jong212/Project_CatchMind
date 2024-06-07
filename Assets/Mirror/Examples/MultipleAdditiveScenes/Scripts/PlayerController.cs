@@ -45,33 +45,23 @@ namespace Mirror.Examples.MultipleAdditiveScenes
                 NetworkServer.Destroy(child.gameObject);
             }
             // 새로운 자식 오브젝트 스폰
-            GameObject newChild = Instantiate(newPrefab, transform.position, transform.rotation);
-            Debug.Log(connectionToClient);
-
-            Scene targetScene = SceneManager.GetSceneByName(sceneName);
+            GameObject newChild = Instantiate(newPrefab, transform.position, transform.rotation);            
+            Scene targetScene = SceneManager.GetSceneByName(sceneName);            
             SceneManager.MoveGameObjectToScene(newChild, targetScene);
+            newChild.transform.SetParent(transform);
             NetworkServer.Spawn(newChild, connectionToClient);
-            newChild.GetComponent<ChildObject>().RpcSetParent(connectionToClient.identity);
-
-
-            //newChild.transform.SetParent(connectionToClient.identity.transform); // 부모 설정
-            //RpcReplaceChild(connectionToClient.identity, newChild.GetComponent<NetworkIdentity>());
-
+            //newChild.transform.localPosition = Vector3.zero;
+            //newChild.GetComponent<ChildObject>().RpcSetParent(connectionToClient.identity);
+            ResetClientToZero(newChild);
             // 클라이언트에서 자식 오브젝트를 동기화
         }
-        /*[ClientRpc]
-        void RpcReplaceChild(NetworkIdentity parent, NetworkIdentity newChildIdentity)
+
+        [ClientRpc]
+        void ResetClientToZero(GameObject obj)
         {
-            if (isServer || !isClientInitialized) return; // 서버 또는 초기화되지 않은 클라이언트는 실행하지 않음
+            obj.transform.localPosition = transform.position;
+        }
 
-
-            // 서버에서 생성된 프리팹을 찾아서 부모 설정
-            GameObject newChild = newChildIdentity.gameObject;
-            if (newChild != null)
-            {
-                newChild.transform.SetParent(parent.transform);
-            }
-        }*/
         bool isClientInitialized = false; // 클라이언트 초기화 상태 변수 추가
 
         public override void OnStartClient()
