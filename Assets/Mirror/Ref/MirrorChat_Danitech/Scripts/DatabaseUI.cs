@@ -3,9 +3,7 @@ using UnityEngine.UI;
 using MySql.Data.MySqlClient;
 using System;
 using System.Data;
-using Unity.VisualScripting;
 using UnityEngine.SceneManagement;
-using UnityEditor.Search;
 
 public class DatabaseUI : Singleton<DatabaseUI>
 {

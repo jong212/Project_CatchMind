@@ -114,7 +114,7 @@ namespace Mirror.Examples.MultipleAdditiveScenes
             yield return new WaitForEndOfFrame();
             Scene targetScene = GetTargetSceneForPlayer();// 플레이어 어느 방으로 보내야 하는지 반환하세요 (서버)
             Vector3 spawnPosition = GetSpawnPosition(targetScene, out int playerIndex); // 반환하는 방에서 몇 번쨰 자리가 비어있는지 확인하고 그 좌표값을 반환하세요 (서버)            
-
+       
             // 일단 플레이어 현재 씬에 추가할게요? 
             // 게임씬은 아님 정확히는 게임씬 이동 전 (서버) 
             // base.OnServerAddPlayer(conn)을 호출하면 호출하면 서버와 클라이언트의 하이어라키에 플레이어 오브젝트가 자동으로 생성됩니다. TargetRpc와 같은 추가적인 동작 없이도 서버와 클라이언트의 상태가 동기화됩니다. (서버에서 실행하고 클라로 상태 전송)
@@ -122,7 +122,6 @@ namespace Mirror.Examples.MultipleAdditiveScenes
 
             // 하이어라키에 생성한 플레이어 정보를 player에 세팅 !(여기 코루틴 타는건 다 서버에서 동작하고 있는상태)
             GameObject player = conn.identity.gameObject;
-
             // 자 이제 플레이어 객체를 게임씬으로으로 이동할게요? (서버)
             SceneManager.MoveGameObjectToScene(player, targetScene);
 
@@ -130,9 +129,10 @@ namespace Mirror.Examples.MultipleAdditiveScenes
             PlayerController playerController = player.GetComponent<PlayerController>();
             if (playerController != null)
             {
-                playerController.TargetUpdatePlayerPosition(conn, spawnPosition);
+                playerController.TargetUpdatePlayerPosition(conn, spawnPosition,playerIndex);
             }
-
+           
+                /*player.GetComponent<RectTransform>().anchoredPosition = new Vector2(1, 1);*/
             // 플레이어 목록에 추가
             scenePlayers[targetScene][playerIndex] = conn;
 
