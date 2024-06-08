@@ -5,6 +5,7 @@ using System;
 using System.Data;
 using Unity.VisualScripting;
 using UnityEngine.SceneManagement;
+using UnityEditor.Search;
 
 public class DatabaseUI : Singleton<DatabaseUI>
 {
@@ -228,9 +229,21 @@ public class DatabaseUI : Singleton<DatabaseUI>
                 _IdChk = false;
             }
         }
-
     }
-
+    public string SelectPlayercharacterNumber(string playerId)
+    {
+        string query = string.Empty;
+        string result = string.Empty;
+        if (playerId != null)
+        {
+            query = $"SELECT CharacterNumber FROM u_info WHERE Nickname = '{playerId}'";
+            result = SendQuery(query, "u_info");
+        } else
+        {
+            Debug.Log("플레이어 아이디 없음");
+        }
+        return result;
+    }
     //회원가입 완료 팝업
     public void OnSubmit_Join_success()
     {
