@@ -1,4 +1,5 @@
 using Mirror.Examples.Chat;
+using System.Collections;
 using System.Runtime.CompilerServices;
 using System.Security.Principal;
 using TMPro;
@@ -11,7 +12,7 @@ namespace Mirror.Examples.MultipleAdditiveScenes
     [RequireComponent(typeof(NetworkTransformReliable))]
     public class PlayerController : NetworkBehaviour
     {
-
+        public GameObject childObject;
         public GameObject newPrefab;
         public GameObject[] Prefabs;
         public RectTransform canvasRectTransform;
@@ -46,38 +47,46 @@ namespace Mirror.Examples.MultipleAdditiveScenes
                         CmdReplaceChild(sceneName, characternum);
                     }
                 }
+
+                // 자식 오브젝트 설정
+                childObject = transform.GetComponent<GameObject>();
+                if (childObject != null)
+                {
+                    childObject.SetActive(false);
+                }
             }
         }
+
 
         void InitializeComponents()
         {
-   Canvas canvas = GetComponentInChildren<Canvas>();
-    if (canvas != null)
-    {
-        canvasRectTransform = canvas.GetComponent<RectTransform>();
-        
-        // 자식 오브젝트 중에서 RectTransform을 가진 오브젝트를 찾음
-        foreach (RectTransform child in canvas.GetComponentsInChildren<RectTransform>())
-        {
-            if (child != canvasRectTransform)
+            Canvas canvas = GetComponentInChildren<Canvas>();
+            if (canvas != null)
             {
-                RawRectTransform = child;
-                break;
+                canvasRectTransform = canvas.GetComponent<RectTransform>();
+
+                // 자식 오브젝트 중에서 RectTransform을 가진 오브젝트를 찾음
+                foreach (RectTransform child in canvas.GetComponentsInChildren<RectTransform>())
+                {
+                    if (child != canvasRectTransform)
+                    {
+                        RawRectTransform = child;
+                        break;
+                    }
+                }
+
+                Debug.Log(RawRectTransform); // 찾은 RectTransform을 로그로 출력
+
+                textMeshProUGUI = canvas.GetComponentInChildren<TextMeshProUGUI>();
+                if (textMeshProUGUI == null)
+                {
+                    Debug.LogError("TextMeshProUGUI component not found during initialization.");
+                }
             }
-        }
-
-        Debug.Log(RawRectTransform); // 찾은 RectTransform을 로그로 출력
-
-        textMeshProUGUI = canvas.GetComponentInChildren<TextMeshProUGUI>();
-        if (textMeshProUGUI == null)
-        {
-            Debug.LogError("TextMeshProUGUI component not found during initialization.");
-        }
-    }
-    else
-    {
-        Debug.LogError("Canvas component not found during initialization.");
-    }
+            else
+            {
+                Debug.LogError("Canvas component not found during initialization.");
+            }
         }
 
         public override void OnStopAuthority()
@@ -95,29 +104,67 @@ namespace Mirror.Examples.MultipleAdditiveScenes
                 }
                 if (Input.GetKeyDown(KeyCode.Return))
                 {
-/*
-1. 클라이언트가 텍스트 입력:
-    * 클라이언트에서 엔터 키를 누르면 Update 메서드에서 CmdChangeText가 호출됩니다.
-    CmdChangeText는 서버에서 실행되며, syncedText 변수를 업데이트합니다.
+                    /*
+                    1. 클라이언트가 텍스트 입력:
+                        * 클라이언트에서 엔터 키를 누르면 Update 메서드에서 CmdChangeText가 호출됩니다.
+                        CmdChangeText는 서버에서 실행되며, syncedText 변수를 업데이트합니다.
 
-2. 서버가 변경 사항 전송:
-    * 서버에서 syncedText 변수가 업데이트되면, 변경 사항이 모든 클라이언트로 전송됩니다.
+                    2. 서버가 변경 사항 전송:
+                        * 서버에서 syncedText 변수가 업데이트되면, 변경 사항이 모든 클라이언트로 전송됩니다.
 
-3. 클라이언트가 변경 사항 수신:
-    * 클라이언트는 변경된 syncedText 값을 수신하고, OnTextChanged 메서드를 호출합니다.
-    * OnTextChanged 메서드는 새로운 텍스트 값을 textMeshProUGUI에 설정하여 UI를 업데이트합니다.
+                    3. 클라이언트가 변경 사항 수신:
+                        * 클라이언트는 변경된 syncedText 값을 수신하고, OnTextChanged 메서드를 호출합니다.
+                        * OnTextChanged 메서드는 새로운 텍스트 값을 textMeshProUGUI에 설정하여 UI를 업데이트합니다.
 
-요약
-SyncVar 변수는 서버에서 변경되면 자동으로 클라이언트로 전송됩니다.
-클라이언트에서 SyncVar 변수의 변경 사항을 수신하면 hook 메서드가 호출됩니다.
-hook 메서드는 클라이언트 측에서 실행되며, UI 업데이트 등의 작업을 수행합니다.                     
-*/
+                    요약
+                    SyncVar 변수는 서버에서 변경되면 자동으로 클라이언트로 전송됩니다.
+                    클라이언트에서 SyncVar 변수의 변경 사항을 수신하면 hook 메서드가 호출됩니다.
+                    hook 메서드는 클라이언트 측에서 실행되며, UI 업데이트 등의 작업을 수행합니다.                     
+                    */
                     string inputText = IField.text;
                     CmdChangeText(inputText);
+                    CmdActivateAndDeactivateObject();
                 }
             }
         }
+        // Command 메서드 추가
+        [Command]
+        void CmdActivateAndDeactivateObject()
+        {
+            RpcActivateAndDeactivateObject();
+            StartCoroutine(DeactivateObjectAfterDelay());
+        }
 
+        // ClientRpc 메서드 추가
+        [ClientRpc]
+        void RpcActivateAndDeactivateObject()
+        {
+            if (childObject != null)
+            {
+                childObject.SetActive(true);
+            }
+        }
+
+        // 코루틴 추가
+        IEnumerator DeactivateObjectAfterDelay()
+        {
+            yield return new WaitForSeconds(3f);
+            if (childObject != null)
+            {
+                childObject.SetActive(false);
+            }
+            RpcDeactivateObject();
+        }
+
+        // ClientRpc 메서드 추가
+        [ClientRpc]
+        void RpcDeactivateObject()
+        {
+            if (childObject != null)
+            {
+                childObject.SetActive(false);
+            }
+        }
         void OnTextChanged(string oldText, string newText)
         {
             Debug.Log("OnTextChanged called with text: " + newText);
@@ -139,22 +186,22 @@ hook 메서드는 클라이언트 측에서 실행되며, UI 업데이트 등의 작업을 수행합니다.
         void CmdChangeText(string inputText)
         {
             syncedText = inputText;
-          /*  RpcChangeText(inputText);*/
+            /*  RpcChangeText(inputText);*/
         }
 
-     /*   [ClientRpc]
-        void RpcChangeText(string inputText)
-        {
-            Debug.Log("RpcChangeText called on the clients");
-            if (textMeshProUGUI != null)
-            {
-                textMeshProUGUI.text = inputText;
-            }
-            else
-            {
-                Debug.LogError("TextMeshProUGUI component not found in RpcChangeText.");
-            }
-        }*/
+        /*   [ClientRpc]
+           void RpcChangeText(string inputText)
+           {
+               Debug.Log("RpcChangeText called on the clients");
+               if (textMeshProUGUI != null)
+               {
+                   textMeshProUGUI.text = inputText;
+               }
+               else
+               {
+                   Debug.LogError("TextMeshProUGUI component not found in RpcChangeText.");
+               }
+           }*/
 
         [Command]
         void CmdReplaceChild(string sceneName, string characternum)
@@ -240,7 +287,7 @@ hook 메서드는 클라이언트 측에서 실행되며, UI 업데이트 등의 작업을 수행합니다.
                 if (playerIndex % 2 == 0) // 짝수 인덱스
                 {
                     canvasRectTransform.anchoredPosition = new Vector2(3.23f, 1.98f);
-         
+
                     CmdChangeAlignment(TextAlignmentOptions.Left); // 서버에서 정렬 상태 업데이트
 
                 }

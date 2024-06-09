@@ -180,7 +180,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6220551684582783438, guid: 7f6df7192d13fb74e8d650d3e9ef6d3b, type: 3}
       propertyPath: instances
-      value: 1
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 6220551684582783438, guid: 7f6df7192d13fb74e8d650d3e9ef6d3b, type: 3}
       propertyPath: roomCapacity
