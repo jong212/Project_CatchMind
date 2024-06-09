@@ -46,14 +46,14 @@ namespace Mirror.Examples.MultipleAdditiveScenes
         [SerializeField]Dictionary<Scene, List<NetworkConnectionToClient?>> scenePlayers = new Dictionary<Scene, List<NetworkConnectionToClient?>>();
         Vector3[] spawnPositions = new Vector3[]
 {
-            new Vector3(-7.01001f, 3.6f, 0),
-            new Vector3(7.3f, 3.6f, 0),
-            new Vector3(-7.01001f, 1.08f, 0),
-            new Vector3(7.3f, 0.99f, 0),
-            new Vector3(-7.01001f,-1.29f, 0),
-            new Vector3(7.3f,-1.12f, 0),
-            new Vector3(-7.01001f,-3.47f, 0),
-            new Vector3(7.3f,-3.57f, 0),
+            new Vector3(-7.35f, 2.38f, 0),
+            new Vector3(7.43f, 2.3f, 0),
+            new Vector3(-7.35f, -0.7f, 0),
+            new Vector3(7.43f, -0.7f, 0),
+            new Vector3(-7.35f,-3.49f, 0),
+            new Vector3(7.43f, -3.49f, 0),
+            new Vector3(-7.35f,-3.66f, 0),
+            new Vector3(7.43f,-3.66f, 0),
 };
         // A <서버> 서버온리할때 실행됨
         public override void OnStartServer()

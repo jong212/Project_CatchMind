@@ -15,11 +15,12 @@ namespace Mirror.Examples.MultipleAdditiveScenes
         public GameObject newPrefab;
         public GameObject[] Prefabs;
         public RectTransform canvasRectTransform;
+        public RectTransform RawRectTransform;
         public TextMeshProUGUI textMeshProUGUI;
         public InputField IField;
         public enum GroundState : byte { Jumping, Falling, Grounded }
         [SyncVar(hook = nameof(OnTextChanged))]
-        private string syncedText = "default text";
+        private string syncedText = "";
 
         [SyncVar(hook = nameof(OnAlignmentChanged))]
         private TextAlignmentOptions syncedAlignment = TextAlignmentOptions.Left;
@@ -50,21 +51,33 @@ namespace Mirror.Examples.MultipleAdditiveScenes
 
         void InitializeComponents()
         {
-            // 자식 오브젝트에서 Canvas 및 TextMeshProUGUI 컴포넌트를 찾음
-            Canvas canvas = GetComponentInChildren<Canvas>();
-            if (canvas != null)
+   Canvas canvas = GetComponentInChildren<Canvas>();
+    if (canvas != null)
+    {
+        canvasRectTransform = canvas.GetComponent<RectTransform>();
+        
+        // 자식 오브젝트 중에서 RectTransform을 가진 오브젝트를 찾음
+        foreach (RectTransform child in canvas.GetComponentsInChildren<RectTransform>())
+        {
+            if (child != canvasRectTransform)
             {
-                canvasRectTransform = canvas.GetComponent<RectTransform>();
-                textMeshProUGUI = canvas.GetComponentInChildren<TextMeshProUGUI>();
-                if (textMeshProUGUI == null)
-                {
-                    Debug.LogError("TextMeshProUGUI component not found during initialization.");
-                }
+                RawRectTransform = child;
+                break;
             }
-            else
-            {
-                Debug.LogError("Canvas component not found during initialization.");
-            }
+        }
+
+        Debug.Log(RawRectTransform); // 찾은 RectTransform을 로그로 출력
+
+        textMeshProUGUI = canvas.GetComponentInChildren<TextMeshProUGUI>();
+        if (textMeshProUGUI == null)
+        {
+            Debug.LogError("TextMeshProUGUI component not found during initialization.");
+        }
+    }
+    else
+    {
+        Debug.LogError("Canvas component not found during initialization.");
+    }
         }
 
         public override void OnStopAuthority()
@@ -160,7 +173,7 @@ hook 메서드는 클라이언트 측에서 실행되며, UI 업데이트 등의 작업을 수행합니다.
                 }
 
                 // 새로운 자식 오브젝트 생성 및 네트워크 동기화
-                GameObject newChild = Instantiate(Prefabs[intnum], transform.position, transform.rotation);
+                GameObject newChild = Instantiate(Prefabs[intnum], transform.position, Prefabs[intnum].transform.rotation);
 
                 // (서버) 참가한 씬을 타겟 변수에 저장
                 Scene targetScene = SceneManager.GetSceneByName(sceneName);
@@ -187,7 +200,9 @@ hook 메서드는 클라이언트 측에서 실행되며, UI 업데이트 등의 작업을 수행합니다.
         {
             if (obj != null)
             {
+                Debug.Log($"Rotation Before ResetClientToZero: {obj.transform.rotation}");
                 obj.transform.localPosition = transform.position;
+                Debug.Log($"Rotation After ResetClientToZero: {obj.transform.rotation}");
             }
             else
             {
@@ -224,15 +239,19 @@ hook 메서드는 클라이언트 측에서 실행되며, UI 업데이트 등의 작업을 수행합니다.
             {
                 if (playerIndex % 2 == 0) // 짝수 인덱스
                 {
-                    canvasRectTransform.anchoredPosition = new Vector2(3.55f, 0.16f);
+                    canvasRectTransform.anchoredPosition = new Vector2(3.23f, 1.98f);
+         
                     CmdChangeAlignment(TextAlignmentOptions.Left); // 서버에서 정렬 상태 업데이트
 
                 }
                 else // 홀수 인덱스
                 {
-                    canvasRectTransform.anchoredPosition = new Vector2(-3.55f, 0.16f);
+                    canvasRectTransform.anchoredPosition = new Vector2(-3.55f, 2.03f);
                     if (textMeshProUGUI != null)
                     {
+                        Vector3 currentRotation = RawRectTransform.transform.rotation.eulerAngles;
+                        currentRotation.y = 180f;
+                        RawRectTransform.transform.rotation = Quaternion.Euler(currentRotation);
                         CmdChangeAlignment(TextAlignmentOptions.Right); // 서버에서 정렬 상태 업데이트
 
                     }

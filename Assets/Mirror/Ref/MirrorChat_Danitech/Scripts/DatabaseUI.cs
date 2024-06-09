@@ -259,8 +259,10 @@ public class DatabaseUI : Singleton<DatabaseUI>
         }
         else
         {
+            string query = $"INSERT INTO u_info (Nickname, Password) VALUES ('{Input_JoinId.text}', '{Input_JoinPw.text}')";
+            bool isSuccess = OnInsertOnUpdateRequest(query);
+
             Btn_confirm.SetActive(!Btn_confirm.activeSelf);
-            Debug.Log("가입완료!");
         }
     }
 
