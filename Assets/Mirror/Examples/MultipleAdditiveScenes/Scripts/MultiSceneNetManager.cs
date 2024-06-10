@@ -127,8 +127,10 @@ namespace Mirror.Examples.MultipleAdditiveScenes
 
             // 클라이언트 플레이어의 PlayerController를 가져와서 TargetRpc 호출
             PlayerController playerController = player.GetComponent<PlayerController>();
+
             if (playerController != null)
             {
+                Debug.Log("spawnPosition" + "server...");
                 playerController.TargetUpdatePlayerPosition(conn, spawnPosition,playerIndex);
             }
            
