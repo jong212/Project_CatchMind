@@ -70,6 +70,7 @@ MonoBehaviour:
   - {fileID: 238705504820909589, guid: 5604ecb269cb4cd4ab04e1ac5beda8e3, type: 3}
   - {fileID: 8095513665970235690, guid: f24f8d870c79ec94faf33cf23503cea6, type: 3}
   - {fileID: 7309250785854668047, guid: 32e3a17645668ff439adb46ded3ae18a, type: 3}
+  - {fileID: 2130143885212580949, guid: 31b1a2a4aba90574290fd9d16798c1ba, type: 3}
   exceptionsDisconnect: 1
   snapshotSettings:
     bufferTimeMultiplier: 2
@@ -85,7 +86,7 @@ MonoBehaviour:
   evaluationMethod: 0
   evaluationInterval: 3
   timeInterpolationGui: 0
-  instances: 2
+  instances: 5
   roomCapacity: 2
   gameScene: Assets/Mirror/Examples/MultipleAdditiveScenes/Scenes/MirrorMultipleAdditiveScenesGame.unity
 --- !u!114 &6220551684582783432

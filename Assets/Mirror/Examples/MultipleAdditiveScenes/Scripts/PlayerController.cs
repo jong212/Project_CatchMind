@@ -1,5 +1,6 @@
 using Mirror.Examples.Chat;
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -17,7 +18,11 @@ namespace Mirror.Examples.MultipleAdditiveScenes
         public TextMeshProUGUI textMeshProUGUI;
         public InputField IField;
         public GameObject cld;
-
+        public GameObject lineRendererPrefab;
+        public Camera cmr;
+        public Color currentColor = Color.black;
+        public float brushSize = 0.1f;
+        private List<Vector2> points = new List<Vector2>();
         [SyncVar(hook = nameof(OnPositionChanged))]
         private Vector2 syncedPosition;
 
@@ -42,6 +47,7 @@ namespace Mirror.Examples.MultipleAdditiveScenes
             {
                 canvasRectTransform.anchoredPosition = newPosition;
             }
+    
         }
 
         public override void OnStartAuthority()
@@ -124,14 +130,64 @@ namespace Mirror.Examples.MultipleAdditiveScenes
                     string inputText = IField.text;
                     CmdChangeText(inputText);
                 }
+                if (Input.GetMouseButtonDown(0))
+                {
+                    CmdClearPoints(); // 서버에서 points 리스트 초기화 요청
+                }
+                if (Input.GetMouseButton(0))
+                {
+                    Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                    CmdSendDrawingData(mousePos, currentColor, brushSize);
+                }
             }
         }
+        [Command]
+        void CmdClearPoints()
+        {
+            RpcClearPoints();
+        }
+        [ClientRpc]
+        void RpcClearPoints()
+        {
+            points.Clear();
+        }
+        [Command]
+        void CmdSendDrawingData(Vector2 position, Color color, float brushSize)
+        {
+            RpcDraw(position, color, brushSize);
+        }
 
+        [ClientRpc]
+        void RpcDraw(Vector2 position, Color color, float brushSize)
+        {
+            Draw(position, color, brushSize);
+        }
+
+        void Draw(Vector2 position, Color color, float brushSize)
+        {
+         
+                if (points.Count > 0 && Vector2.Distance(points[points.Count - 1], position) > 0.1f)
+                {
+                    GameObject lineObj = Instantiate(lineRendererPrefab);
+                    LineRenderer line = lineObj.GetComponent<LineRenderer>();
+                    line.startColor = color;
+                    line.endColor = color;
+                    line.startWidth = brushSize;
+                    line.endWidth = brushSize;
+                    line.SetPosition(0, points[points.Count - 1]);
+                    line.SetPosition(1, position);
+                    points.Add(position);
+                }
+                else if (points.Count == 0)
+                {
+                    points.Add(position);
+                }
+            }
         void OnTextChanged(string oldText, string newText)
         {
             Debug.Log($"OnTextChanged called with text: {newText}");
             if (textMeshProUGUI != null)
-            {
+            {   
                 textMeshProUGUI.text = newText;
                 StartCoroutine(ActivateChildTemporarily(3f)); // Activate for 3 seconds
             }

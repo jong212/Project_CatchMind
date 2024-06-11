@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 4822224316094678}
   - component: {fileID: 114402732107420660}
   - component: {fileID: 485255742382306150}
-  - component: {fileID: 8715117357206038899}
   - component: {fileID: 114892629901890886}
   - component: {fileID: 115187108610643062}
   m_Layer: 0
@@ -88,21 +87,6 @@ MonoBehaviour:
   rotationSensitivity: 0.01
   positionPrecision: 0.01
   scalePrecision: 0.01
---- !u!114 &8715117357206038899
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1480027675339556}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6cac48dc20f866148b44d0f9b5850761, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  syncDirection: 0
-  syncMode: 0
-  syncInterval: 0.1
 --- !u!114 &114892629901890886
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -118,7 +102,6 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0.1
-  childObject: {fileID: 911256847366809727}
   newPrefab: {fileID: 8711289776401269294, guid: 9fcdd91d4fee8f5498d6471dcc03f9f3, type: 3}
   Prefabs:
   - {fileID: 8711289776401269294, guid: 9fcdd91d4fee8f5498d6471dcc03f9f3, type: 3}
@@ -130,6 +113,10 @@ MonoBehaviour:
   textMeshProUGUI: {fileID: 0}
   IField: {fileID: 0}
   cld: {fileID: 0}
+  lineRendererPrefab: {fileID: 2130143885212580949, guid: 31b1a2a4aba90574290fd9d16798c1ba, type: 3}
+  cmr: {fileID: 0}
+  currentColor: {r: 0, g: 0, b: 0, a: 1}
+  brushSize: 0.1
 --- !u!114 &115187108610643062
 MonoBehaviour:
   m_ObjectHideFlags: 0
