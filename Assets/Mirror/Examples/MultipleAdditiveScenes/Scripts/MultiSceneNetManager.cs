@@ -30,6 +30,7 @@ namespace Mirror.Examples.MultipleAdditiveScenes
             }
             Debug.Log(scenePlayerCount);
         }
+        [SerializeField] GameObject countdownPrefab; // 카운트다운 오브젝트 프리팹
 
         [Header("Spawner Setup")]
 
@@ -58,6 +59,12 @@ namespace Mirror.Examples.MultipleAdditiveScenes
         // A <서버> 서버온리할때 실행됨
         public override void OnStartServer()
         {
+            // 프리팹을 네트워크 매니저에 등록
+            if (!spawnPrefabs.Contains(countdownPrefab))
+            {
+                spawnPrefabs.Add(countdownPrefab);
+            }
+
             StartCoroutine(ServerLoadSubScenes());
         }
 
@@ -80,6 +87,10 @@ namespace Mirror.Examples.MultipleAdditiveScenes
 
                 // 스포너를 통해 씬에서 초기 스폰 작업을 수행한다.
                 Spawner.InitialSpawn(newScene);
+
+                GameObject countdownObject = Instantiate(countdownPrefab);
+                NetworkServer.Spawn(countdownObject);
+                SceneManager.MoveGameObjectToScene(countdownObject, newScene);
             }
 
             subscenesLoaded = true;
